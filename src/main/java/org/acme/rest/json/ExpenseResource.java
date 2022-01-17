@@ -1,9 +1,11 @@
 package org.acme.rest.json;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
-import javax.transaction.Transactional;
+import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -16,53 +18,60 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.acme.rest.json.Expense.PaymentMethod;
+import org.jboss.logging.Logger;
 
 @Path("/expenses")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class ExpenseResource {
+    @Inject
+    public ExpenseService expenseService;
 
-    final Logger log = LoggerFactory.getLogger(ExpenseResource.class);
+    private final Logger logger = Logger.getLogger(ExpenseResource.class);
 
     @GET
-    public List<Expense> list() {
-        log.info("Returning the list from Expenses");
-        return Expense.listAll();
+    public Set<Expense> list() {
+        Set<Expense> lista = expenseService.list();
+        if(lista.isEmpty()){
+            lista.add(new Expense("Groceries", PaymentMethod.CASH, "150.50"));
+        }
+
+        String logLista = "{";
+
+        List<Expense> arrayLista = new ArrayList<Expense>();
+
+        for (Expense expense : lista) {
+            arrayLista.add(expense);    
+        }
+
+        logLista+="\"name\":\""+ arrayLista.get(0).getName() +"\"";
+        logLista+=",\"amount\":\""+ arrayLista.get(0).getAmount() +"\"";
+        logLista+=",\"paymentMethod\":\""+ arrayLista.get(0).getPaymentMethod() +"\"";
+        logLista+=",\"uuid\":\""+ arrayLista.get(0).getUuid() +"\"";
+        logLista+="}";
+
+        System.out.println(logLista);
+
+        return lista;
     }
 
     @POST
-    @Transactional
-    public Expense create(final Expense expense) {
-        log.info("Creating expense: " + expense.name);
-        Expense newExpense = Expense.of(expense.name, expense.paymentMethod, expense.amount.toString());
-        newExpense.persist();
-
-        return newExpense;
+    public Expense create(Expense expense) {
+        return expenseService.create(expense);
     }
 
     @DELETE
     @Path("{uuid}")
-    @Transactional
-    public List<Expense> delete(@PathParam("uuid") final UUID uuid) {
-        long numExpensesDeleted = Expense.delete("uuid", uuid);
-
-        if (numExpensesDeleted == 0) {
+    public Set<Expense> delete(@PathParam("uuid") UUID uuid) {
+        if (!expenseService.delete(uuid)) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
-
-        log.info("The expense with the UUID: " + uuid + " was deleted");
-
-        return Expense.listAll();
+        return expenseService.list();
     }
 
     @PUT
-    @Transactional
-    public void update(final Expense expense) {
-        log.info("Updating the expense: " + expense.name);
-        Expense.update(expense);
+    public void update(Expense expense) {
+        expenseService.update(expense);
     }
-
-    
 }

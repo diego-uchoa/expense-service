@@ -2,36 +2,25 @@ package org.acme.rest.json;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
-
 import javax.json.bind.annotation.JsonbCreator;
-import javax.json.bind.annotation.JsonbDateFormat;
-import javax.persistence.Entity;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
-@Entity
-public class Expense extends PanacheEntity {
+public class Expense {
 
     enum PaymentMethod {
         CASH, CREDIT_CARD, DEBIT_CARD,
     }
 
-    public UUID uuid;
-    public String name;
+    private UUID uuid;
+    private String name;
+    private LocalDateTime creationDate;
+    private PaymentMethod paymentMethod;
+    private BigDecimal amount;
 
-    @JsonbDateFormat(value = "yyyy-MM-dd HH:mm:ss")
-    public LocalDateTime creationDate;
-    public PaymentMethod paymentMethod;
-    public BigDecimal amount;
 
-    public Expense() {
-    }
-
-    public Expense(UUID uuid, String name, LocalDateTime creationDate, PaymentMethod paymentMethod, String amount) {
+    public Expense(UUID uuid, String name, LocalDateTime creationDate,
+            PaymentMethod paymentMethod, String amount) {
         this.uuid = uuid;
         this.name = name;
         this.creationDate = creationDate;
@@ -48,19 +37,44 @@ public class Expense extends PanacheEntity {
         return new Expense(name, paymentMethod, amount);
     }
 
-    public static void update(final Expense expense) {
-        Optional<Expense> previous = Expense.findByIdOptional(expense.id);
+    public UUID getUuid() {
+        return uuid;
+    }
 
-        previous.ifPresentOrElse((update) -> {
-            update.uuid = expense.uuid;
-            update.name = expense.name;
-            update.amount = expense.amount;
-            update.paymentMethod = expense.paymentMethod;
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
+    }
 
-            update.persist();
-        }, () -> {
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
-        });
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public LocalDateTime getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(LocalDateTime creationDate) {
+        this.creationDate = creationDate;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
     }
 
 }
